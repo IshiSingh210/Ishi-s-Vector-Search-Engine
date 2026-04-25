@@ -1,0 +1,248 @@
+{
+  "name": "Ishi's Vector Search Engine",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.query }}",
+        "options": {
+          "systemMessage": "=You are a routing-first assistant. Your primary job is to answer accurately and choose the correct tool(s) when needed.\n\nYou have access to these tools:\n1) openai_tool: Use for general knowledge questions and reasoning that do NOT require up-to-the-minute information.\n2) internet_tool: Use when the question depends on current, time-sensitive, or frequently changing information that must be verified online.\n3) aws_rag_search: Use when the user asks about AWS-specific topics, AWS services, AWS APIs/CLI, AWS pricing/limits/quotas, AWS security/compliance, AWS architecture patterns, or anything that should be grounded in AWS documentation or the organization’s AWS knowledge base.\n\nTool selection rules (follow in order):\n\nA) Decide if the question needs fresh, real-time verification.\n- If the user asks about “latest”, “current”, “today”, “this week”, “new release”, “recent outage”, “current price”, “current policy/law”, “current CEO”, “schedule”, “status”, or anything likely to have changed recently:\n  → Use internet_tool.\n  → Cite sources or include links as evidence when possible.\n  → If sources disagree, state that clearly and explain why.\n\nB) Decide if the question is AWS-specialized.\n- If the user’s intent is AWS-specific or best answered from AWS docs/knowledge base:\n  → Use aws_rag_search first.\n  → Base the answer on retrieved documents.\n  → If retrieval is empty/insufficient, then:\n     - Use internet_tool to cross-check official AWS docs/release notes, OR\n     - Ask a single focused question only if absolutely required.\n\nC) Otherwise, treat it as general knowledge.\n- For general conceptual questions (math, writing, explanations, coding logic, strategy, definitions) that do not require freshness:\n  → Use openai_tool.\n  → Do not browse unnecessarily.\n\nOutput requirements:\n- Be direct and practical.\n- When you use internet_tool or aws_rag_search, ground claims in what you found and include concise citations/attribution.\n- If you are uncertain, say what is uncertain and what would resolve it.\n- Do not invent documentation, release notes, metrics, or quotes.\n\nExamples (tool routing):\n- “What’s the newest NVIDIA GPU?” → internet_tool\n- “Explain A/B testing” → openai_tool\n- “How do I set up AWS IAM Identity Center with SSO?” → aws_rag_search\n- “What is the current pricing for AWS Lambda in us-east-1?” → aws_rag_search, then internet_tool if pricing doc isn’t in the RAG or needs verification\n- “Is there an AWS outage right now?” → internet_tool\n\nFailure handling:\n- If a tool call fails or returns no useful info, say so briefly and try the next best tool per the rules above.\n- Never fabricate an answer when the correct response depends on missing retrieval or browsing."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        736,
+        192
+      ],
+      "id": "9b68d885-95c3-49ba-8250-66d9c5dfd102",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        688,
+        480
+      ],
+      "id": "f696cb14-e4a8-4021-9a2f-26a902386db4",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "wTbF0fUrg0TW1pPL",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.body.username }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        880,
+        512
+      ],
+      "id": "2323f9d2-a08d-419c-bfa5-496601c474db",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Returns answers to AWS documentation",
+        "method": "POST",
+        "url": "https://pro-documents.traversaal-api.com/documents/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_TOKEN_HERE"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "Hello World"
+            },
+            {
+              "name": "generation",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        1536,
+        432
+      ],
+      "id": "3459a692-df4d-44e2-9705-ff58a9a4752c",
+      "name": "AWS Document Search"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Does Internet Search",
+        "method": "POST",
+        "url": "https://pro-documents.traversaal-api.com/documents/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "Bearer YOUR_API_KEY_HERE"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters0_Value', ``, 'string') }}"
+            },
+            {
+              "name": "generation",
+              "value": "false"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        512
+      ],
+      "id": "4406cc2c-65dd-49b3-be73-42634f51030b",
+      "name": "Internet Search"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chat-assistant",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        512,
+        192
+      ],
+      "id": "d61ae7d5-69be-43b3-9310-f4207922f98a",
+      "name": "Webhook",
+      "webhookId": "19f51f47-8e68-4e84-a4b7-734bd051fcfe"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1088,
+        192
+      ],
+      "id": "b0ab685d-5cbe-429b-a9f8-c94ad8bb6c53",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AWS Document Search": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Internet Search": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "d05d9ff2-1601-4176-ad2e-9c0a8bd36553",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5fc5b3c50735ab858f13c4178a5835599b75455d88fb7e6d0d3bd62086e78401"
+  },
+  "id": "XvyzO5cRvQ4L4kLl2kL-Z",
+  "tags": []
+}
