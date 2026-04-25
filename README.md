@@ -2,6 +2,7 @@
 
 An n8n workflow that routes user queries to the right AI tool automatically — general knowledge, live internet search, or AWS documentation RAG — with persistent memory per user session.
 
+> Built under the guidance and mentorship of [Dr. Kanad Basu](https://www.marshall.usc.edu/personnel/kanad-basu)
 ---
 
 ## What It Does
