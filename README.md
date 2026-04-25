@@ -6,8 +6,6 @@ An n8n workflow that routes user queries to the right AI tool automatically — 
 
 ## What It Does
 
-Most AI assistants treat every question the same way. This one doesn't.
-
 When a query comes in, the agent decides:
 
 - Is this a **general knowledge question** (math, code, explanations)? → answers directly using GPT-4o-mini
@@ -112,25 +110,11 @@ POST https://your-n8n-instance/webhook/chat-assistant
 
 ---
 
-## Example Queries
-
-| Query | Tool Used |
-|---|---|
-| "Explain idempotency" | GPT-4o-mini (general) |
-| "What's the latest AWS Bedrock pricing?" | AWS RAG → Internet fallback |
-| "Is there an AWS outage right now?" | Internet Search |
-| "How do I set up IAM Identity Center with SSO?" | AWS RAG |
-| "Write a Python function to reverse a string" | GPT-4o-mini (general) |
-| "What's new in re:Invent 2025?" | Internet Search |
-
----
-
 ## Files in This Repo
 
 ```
 ├── workflow.json       # n8n workflow export (credentials redacted)
 ├── screenshot.png      # n8n canvas overview
-├── .env.example        # required credentials reference
 └── README.md
 ```
 
@@ -164,9 +148,3 @@ TRAVERSAAL_PRO_BEARER_TOKEN=
 - The agent uses GPT-4o-mini by default — complex reasoning may benefit from GPT-4o
 - RAG quality depends on how well your document corpus is indexed in Traversaal Pro
 - Internet search results are not always deterministic; the agent may phrase the same answer differently across runs
-
----
-
-## License
-
-MIT — use freely, modify, redistribute. Credit appreciated but not required.
